@@ -6,13 +6,13 @@ Open `index.html` in a browser.
 
 ## Pens
 
-- Pencil – solid 7px line
-- Scribble – thin jittery line
-- Spray – random dots
-- Rainbow – hue cycles along the stroke
-- Dots – pulsing circles
-- Animated stamp – stamps frames of an animated GIF along the stroke
-- Eraser – paints white
+- Pencil – solid line
+- 20 wacky brushes ported from kmpix (`brushes.js`): Leaky Pen, Dots, Rainbow Dots,
+  Bubbly, Pies, Echoes, Connect The Dots, Swirl, Rotating Dots, Rotating Pentagon,
+  Rose, Splatter, Triangles, Raindrops, Rainbow Bar, Rainbow Doughnut, Rainbow Ball,
+  Spray, Icy, Dumbbell
+- Animated stamp – one button per GIF in `assets/`
+- Eraser
 
 The square row above the canvas picks the size for every pen. Pick a color from
 the swatches. Undo reverts the last stroke. Clear wipes the canvas. Save keeps the
@@ -27,6 +27,7 @@ Until then the stamp pen uses a generated smiley.
 
 - `index.html` – layout and buttons
 - `sketch.js` – tools and p5 sketch
+- `brushes.js` – brush renderers + `BRUSHES` button table
 - `p5.min.js` – vendored p5.js 1.9.4
 
 ## Deploy

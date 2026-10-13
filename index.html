@@ -19,9 +19,10 @@
         gap: 8px;
       }
       #tools {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(3, 48px);
         gap: 4px;
+        align-content: start;
       }
       #sizes {
         display: flex;
@@ -55,7 +56,7 @@
         background: #fff;
         display: block;
         /* !important beats p5's inline size; height:auto keeps 16:9 */
-        width: min(calc(100vw - 100px), calc((100vh - 160px) * 1920 / 1080)) !important;
+        width: min(calc(100vw - 210px), calc((100vh - 160px) * 1920 / 1080)) !important;
         height: auto !important;
       }
       #bottom {
@@ -92,7 +93,7 @@
     <div id="app">
       <div id="tools">
         <button data-tool="pencil" title="Pencil">✏️</button>
-        <!-- one button per GIFS entry is inserted here by sketch.js -->
+        <!-- one button per BRUSHES and GIFS entry is inserted here by sketch.js -->
         <button data-tool="eraser" title="Eraser">⬜</button>
       </div>
       <div id="canvas"></div>
@@ -156,6 +157,7 @@
       <button class="act" id="export" title="Download PNG">Export</button>
     </div>
     <script src="p5.min.js"></script>
+    <script src="brushes.js"></script>
     <script src="sketch.js"></script>
   </body>
 </html>

@@ -57,6 +57,29 @@ const tools = {
     release() {},
   },
 
+  // Stamps a BRUSHES entry along the stroke: by pointer spacing, or on a timer while held (anim).
+  brush: {
+    press(x, y) {
+      if (this.key !== current.brush) { this.key = current.brush; this.pstep = 0; } // dot numbering restarts per pick
+      this.step = 0; this.dist = 0; this.last = null; this.at = [x, y];
+      this.place(x, y);
+      const { anim } = BRUSHES[current.brush];
+      if (anim) this.timer = setInterval(() => { this.place(...this.at); redraw(); }, anim);
+    },
+    drag(x, y, px, py) {
+      const b = BRUSHES[current.brush];
+      this.at = [x, y]; this.dist = dist(px, py, x, y);
+      if (b.anim || !this.last || dist(...this.last, x, y) > b.spacing * brushScale()) this.place(x, y);
+    },
+    place(x, y) {
+      const { brush, offset = 0, abspos } = BRUSHES[current.brush].make(current.color, this.step++, this.pstep++, this.dist);
+      const [bx, by] = abspos ? [abspos.x, abspos.y] : [x - offset, y - offset];
+      topPaint().drawingContext.drawImage(brush, Math.round(bx), Math.round(by));
+      this.last = [x, y];
+    },
+    release() { clearInterval(this.timer); this.timer = null; },
+  },
+
   gif: {
     press(x, y) { this.lx = x; this.ly = y; this.stamp(x, y); },
     drag(x, y) {
@@ -84,6 +107,7 @@ function setup() {
   createCanvas(W, H).parent('canvas');
   noLoop();
   layers = [{ g: newPaint() }];
+  addBrushButtons();
   addGifButtons();
   wireButtons();
   cursor(renderCursor());
@@ -95,6 +119,16 @@ function setup() {
 function draw() {
   background(255);
   layers.forEach(l => l.g ? image(l.g, 0, 0) : image(l.img, l.x, l.y, l.w, l.h)); // image() advances gif frame
+}
+
+function addBrushButtons() {
+  const eraser = document.querySelector('[data-tool="eraser"]');
+  Object.entries(BRUSHES).forEach(([key, { name, icon, img }]) => {
+    const b = document.createElement('button');
+    b.dataset.tool = 'brush'; b.dataset.brush = key; b.title = name;
+    if (img) b.innerHTML = `<img src="${ASSETS_PREFIX}brushes/${img}" alt="">`; else b.textContent = icon;
+    eraser.before(b);
+  });
 }
 
 // One tool button per gif; the browser animates the <img> preview itself.
@@ -114,6 +148,7 @@ function wireButtons() {
     btns.forEach(b => b.onclick = () => {
       current[key] = parse(b.dataset[key]);
       if ('gif' in b.dataset) current.gif = Number(b.dataset.gif);
+      if ('brush' in b.dataset) current.brush = b.dataset.brush;
       btns.forEach(o => o.classList.toggle('on', o === b));
       cursor(renderCursor());
     });
@@ -169,6 +204,7 @@ function mouseReleased() { last = null; tools[current.tool].release(); }
 function renderCursor() {
   if (current.tool === "pencil") return "drag";
   if (current.tool === "eraser") return "move";
+  if (current.tool === "brush") return "crosshair";
   if (current.tool === "gif") return ASSETS_PREFIX + GIFS[current.gif];
   return "pointer";
 }
@@ -182,3 +218,7 @@ document.querySelectorAll('[data-tool]').forEach(b => console.assert(tools[b.dat
 console.assert(document.querySelectorAll('[data-color]').length >= 8, 'palette too small');
 console.assert(document.querySelectorAll('[data-size]').length === 4, 'size picker incomplete');
 console.assert(document.querySelectorAll('[data-gif]').length === GIFS.length, 'gif buttons missing');
+for (const [k, b] of Object.entries(BRUSHES)) {
+  console.assert((b.anim > 0) !== (b.spacing >= 0), `brush ${k} needs exactly one of anim/spacing`);
+  console.assert(b.make('#000', 0, 0, 0).brush instanceof HTMLCanvasElement, `brush ${k} did not render`);
+}
