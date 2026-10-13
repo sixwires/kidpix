@@ -11,8 +11,17 @@ Open `index.html` in a browser.
 - Spray – random dots
 - Rainbow – hue cycles along the stroke
 - Dots – pulsing circles
+- Animated stamp – stamps frames of an animated GIF along the stroke
+- Eraser – paints white
 
-Pick a color from the swatches. Undo reverts the last stroke. Clear wipes the canvas.
+The square row above the canvas picks the size for every pen. Pick a color from
+the swatches. Undo reverts the last stroke. Clear wipes the canvas. Save keeps the
+drawing in this browser (restored on reload). Export downloads a PNG.
+
+## Adding GIF stamps
+
+Put animated GIFs in `gifs/` and list them in `GIFS` at the top of `sketch.js`.
+Until then the stamp pen uses a generated smiley.
 
 ## Files
 
