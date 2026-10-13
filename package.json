@@ -1,0 +1,9 @@
+{
+  "name": "kidpix",
+  "private": true,
+  "scripts": {
+    "vercel:build": "vercel pull --yes && vercel build",
+    "deploy": "npm run vercel:build && vercel deploy --prebuilt",
+    "deploy:prod": "vercel pull --yes --environment production && vercel build --prod && vercel deploy --prebuilt --prod"
+  }
+}
