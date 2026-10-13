@@ -125,8 +125,8 @@ function wireButtons() {
   document.getElementById('clear').onclick = () => { saveUndo(); resetLayers([{ g: newPaint() }]); };
   document.getElementById('undo').onclick = () => {
     if (!undo) return;
-    resetLayers(undo); // snapshot graphics become the live layers, so undo is single-use
-    undo = null;
+    const cur = layers;
+    setLayers(undo); undo = cur; redraw(); // swap, so pressing again redoes (like kmpix)
   };
   document.getElementById('save').onclick = () => {
     try { localStorage.setItem(SAVE_KEY, drawingContext.canvas.toDataURL()); }
