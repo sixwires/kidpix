@@ -10,13 +10,19 @@ const current = { tool: 'pencil', color: '#000000', size: 8, gif: 0 };
 let layers = [];
 let undo = null;
 
+// p5 only loops while an animated gif is on canvas; everything else redraws on demand.
+function setLayers(next) {
+  layers = next;
+  layers.some(l => l.img) ? loop() : noLoop();
+}
+
 const newPaint = () => createGraphics(W, H);
 const paintLayers = () => layers.filter(l => l.g);
 function topPaint() {
   if (!layers.at(-1)?.g) layers = [...layers, { g: newPaint() }];
   return layers.at(-1).g;
 }
-function resetLayers(next) { layers.forEach(l => l.g && l.g.remove()); layers = next; }
+function resetLayers(next) { layers.forEach(l => l.g && l.g.remove()); setLayers(next); redraw(); }
 
 // Animated GIF stamps
 const GIFS = ["korie-cara.gif", "korie-kid.gif", "madi-baby.png"];
@@ -46,7 +52,7 @@ const tools = {
       // ponytail: paint layers either side of a removed gif are never merged; fine until layer count hurts
       const r = current.size;
       const hit = s => x > s.x - r && x < s.x + s.w + r && y > s.y - r && y < s.y + s.h + r;
-      layers = layers.filter(l => l.g || !hit(l));
+      setLayers(layers.filter(l => l.g || !hit(l)));
     },
     release() {},
   },
@@ -61,7 +67,7 @@ const tools = {
       const img = stamps[current.gif];
       const h = current.size * STAMP_SCALE, w = h * img.width / img.height; // keep aspect
       const stamp = { img, x: x - w / 2, y: y - h / 2, w, h };
-      if (img.gifProperties) layers = [...layers, stamp];       // animated: keep as object
+      if (img.gifProperties) setLayers([...layers, stamp]);     // animated: keep as object
       else topPaint().image(img, stamp.x, stamp.y, w, h);       // static: bake into paint
       this.lx = x; this.ly = y;
     },
@@ -74,18 +80,21 @@ function preload() {
 }
 
 function setup() {
+  pixelDensity(1); // 1920x1080 backing store, not DPR-scaled
   createCanvas(W, H).parent('canvas');
+  noLoop();
   layers = [{ g: newPaint() }];
   addGifButtons();
   wireButtons();
+  cursor(renderCursor());
   const saved = localStorage.getItem(SAVE_KEY);
-  if (saved) loadImage(saved, img => layers[0].g.image(img, 0, 0, W, H)); // saved PNG is pixelDensity-scaled
+  const first = layers[0].g;
+  if (saved) loadImage(saved, img => { if (layers[0]?.g !== first) return; first.image(img, 0, 0, W, H); redraw(); });
 }
 
 function draw() {
   background(255);
   layers.forEach(l => l.g ? image(l.g, 0, 0) : image(l.img, l.x, l.y, l.w, l.h)); // image() advances gif frame
-  cursor(renderCursor());
 }
 
 // One tool button per gif; the browser animates the <img> preview itself.
@@ -106,6 +115,7 @@ function wireButtons() {
       current[key] = parse(b.dataset[key]);
       if ('gif' in b.dataset) current.gif = Number(b.dataset.gif);
       btns.forEach(o => o.classList.toggle('on', o === b));
+      cursor(renderCursor());
     });
     [...btns].find(b => parse(b.dataset[key]) === current[key]).classList.add('on');
   };
@@ -115,7 +125,8 @@ function wireButtons() {
   document.getElementById('clear').onclick = () => { saveUndo(); resetLayers([{ g: newPaint() }]); };
   document.getElementById('undo').onclick = () => {
     if (!undo) return;
-    resetLayers(undo.map(l => l.snap ? { g: snapToPaint(l.snap) } : l));
+    const cur = layers;
+    setLayers(undo); undo = cur; redraw(); // swap, so pressing again redoes (like kmpix)
   };
   document.getElementById('save').onclick = () => {
     try { localStorage.setItem(SAVE_KEY, drawingContext.canvas.toDataURL()); }
@@ -124,23 +135,36 @@ function wireButtons() {
   document.getElementById('export').onclick = () => saveCanvas('kidpix', 'png');
 }
 
-function saveUndo() { undo = layers.map(l => l.g ? { snap: l.g.get() } : l); }
-function snapToPaint(img) { const g = newPaint(); g.image(img, 0, 0); return g; }
+// GPU-side copy of each paint layer; no pixel readback.
+function saveUndo() {
+  undo?.forEach(l => l.g && l.g.remove());
+  undo = layers.map(l => l.g ? { g: copyPaint(l.g) } : l);
+}
+function copyPaint(src) { const g = newPaint(); g.image(src, 0, 0); return g; }
 
 function inCanvas() { return mouseX >= 0 && mouseX < W && mouseY >= 0 && mouseY < H; }
+
+// p5 only refreshes pmouseX/Y inside its own frame loop, so under noLoop() track the previous point here.
+let last = null;
 
 function mousePressed() {
   if (!inCanvas()) return;
   saveUndo();
+  last = [mouseX, mouseY];
   tools[current.tool].press(mouseX, mouseY);
+  redraw();
 }
 
 function mouseDragged() {
+  if (!last) return;
+  const [px, py] = last;
+  last = [mouseX, mouseY];
   if (!inCanvas()) return;
-  tools[current.tool].drag(mouseX, mouseY, pmouseX, pmouseY);
+  tools[current.tool].drag(mouseX, mouseY, px, py);
+  redraw();
 }
 
-function mouseReleased() { tools[current.tool].release(); }
+function mouseReleased() { last = null; tools[current.tool].release(); }
 
 function renderCursor() {
   if (current.tool === "pencil") return "drag";
