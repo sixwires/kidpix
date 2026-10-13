@@ -1,58 +1,161 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>KidPix</title>
-<style>
-  body { margin: 0; font-family: sans-serif; background: #ccc; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; }
-  #app { display: flex; gap: 8px; }
-  #tools { display: flex; flex-direction: column; gap: 4px; }
-  #sizes { display: flex; gap: 4px; }
-  button { width: 48px; height: 48px; border: 3px solid #000; background: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-  button.on { background: #ff0; }
-  #sizes i { display: block; background: #000; }
-  #canvas canvas { border: 3px solid #000; background: #fff; display: block; }
-  #bottom { display: flex; gap: 4px; align-items: center; }
-  #bottom .swatch { width: 32px; height: 32px; }
-  #bottom .act { width: auto; padding: 0 8px; font-size: 14px; }
-</style>
-</head>
-<body>
-<div id="sizes">
-  <button data-size="4"  title="Small"><i style="width:8px;height:8px"></i></button>
-  <button data-size="8"  title="Medium"><i style="width:16px;height:16px"></i></button>
-  <button data-size="16" title="Large"><i style="width:26px;height:26px"></i></button>
-  <button data-size="32" title="Huge"><i style="width:38px;height:38px"></i></button>
-</div>
-<div id="app">
-  <div id="tools">
-    <button data-tool="pencil"  title="Pencil">✏️</button>
-    <button data-tool="scribble" title="Scribble">〰️</button>
-    <button data-tool="spray"   title="Spray">💨</button>
-    <button data-tool="rainbow" title="Rainbow">🌈</button>
-    <button data-tool="dots"    title="Dots">⚫</button>
-    <button data-tool="gif"     title="Animated stamp">🎞️</button>
-    <button data-tool="eraser"  title="Eraser">⬜</button>
-  </div>
-  <div id="canvas"></div>
-</div>
-<div id="bottom">
-  <button class="swatch" data-color="#000000" style="background:#000000"></button>
-  <button class="swatch" data-color="#ffffff" style="background:#ffffff"></button>
-  <button class="swatch" data-color="#ff0000" style="background:#ff0000"></button>
-  <button class="swatch" data-color="#ff8800" style="background:#ff8800"></button>
-  <button class="swatch" data-color="#ffff00" style="background:#ffff00"></button>
-  <button class="swatch" data-color="#00aa00" style="background:#00aa00"></button>
-  <button class="swatch" data-color="#0000ff" style="background:#0000ff"></button>
-  <button class="swatch" data-color="#8800ff" style="background:#8800ff"></button>
-  <button class="swatch" data-color="#ff66cc" style="background:#ff66cc"></button>
-  <button class="swatch" data-color="#884400" style="background:#884400"></button>
-  <button class="act" id="undo">Undo</button>
-  <button class="act" id="clear">Clear</button>
-  <button class="act" id="save" title="Keep drawing in this browser">Save</button>
-  <button class="act" id="export" title="Download PNG">Export</button>
-</div>
-<script src="p5.min.js"></script>
-<script src="sketch.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>KidPix</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+        background: #ccc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+      }
+      #app {
+        display: flex;
+        gap: 8px;
+      }
+      #tools {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #sizes {
+        display: flex;
+        gap: 4px;
+      }
+      button {
+        width: 48px;
+        height: 48px;
+        border: 3px solid #000;
+        background: #fff;
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      button img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      button.on {
+        background: #ff0;
+      }
+      #sizes i {
+        display: block;
+        background: #000;
+      }
+      #canvas canvas {
+        border: 3px solid #000;
+        background: #fff;
+        display: block;
+        /* !important beats p5's inline size; height:auto keeps 1900:1280 */
+        width: min(calc(100vw - 100px), calc((100vh - 160px) * 1900 / 1280)) !important;
+        height: auto !important;
+      }
+      #bottom {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+      #bottom .swatch {
+        width: 32px;
+        height: 32px;
+      }
+      #bottom .act {
+        width: auto;
+        padding: 0 8px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sizes">
+      <button data-size="4" title="Small">
+        <i style="width: 8px; height: 8px"></i>
+      </button>
+      <button data-size="8" title="Medium">
+        <i style="width: 16px; height: 16px"></i>
+      </button>
+      <button data-size="16" title="Large">
+        <i style="width: 26px; height: 26px"></i>
+      </button>
+      <button data-size="32" title="Huge">
+        <i style="width: 38px; height: 38px"></i>
+      </button>
+    </div>
+    <div id="app">
+      <div id="tools">
+        <button data-tool="pencil" title="Pencil">✏️</button>
+        <!-- one button per GIFS entry is inserted here by sketch.js -->
+        <button data-tool="eraser" title="Eraser">⬜</button>
+      </div>
+      <div id="canvas"></div>
+    </div>
+    <div id="bottom">
+      <button
+        class="swatch"
+        data-color="#000000"
+        style="background: #000000"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#ffffff"
+        style="background: #ffffff"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#ff0000"
+        style="background: #ff0000"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#ff8800"
+        style="background: #ff8800"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#ffff00"
+        style="background: #ffff00"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#00aa00"
+        style="background: #00aa00"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#0000ff"
+        style="background: #0000ff"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#8800ff"
+        style="background: #8800ff"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#ff66cc"
+        style="background: #ff66cc"
+      ></button>
+      <button
+        class="swatch"
+        data-color="#884400"
+        style="background: #884400"
+      ></button>
+      <button class="act" id="undo">Undo</button>
+      <button class="act" id="clear">Clear</button>
+      <button class="act" id="save" title="Keep drawing in this browser">
+        Save
+      </button>
+      <button class="act" id="export" title="Download PNG">Export</button>
+    </div>
+    <script src="p5.min.js"></script>
+    <script src="sketch.js"></script>
+  </body>
 </html>
