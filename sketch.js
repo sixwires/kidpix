@@ -88,7 +88,8 @@ function setup() {
   wireButtons();
   cursor(renderCursor());
   const saved = localStorage.getItem(SAVE_KEY);
-  if (saved) loadImage(saved, img => { layers[0].g.image(img, 0, 0, W, H); redraw(); });
+  const first = layers[0].g;
+  if (saved) loadImage(saved, img => { if (layers[0]?.g !== first) return; first.image(img, 0, 0, W, H); redraw(); });
 }
 
 function draw() {
@@ -124,7 +125,7 @@ function wireButtons() {
   document.getElementById('clear').onclick = () => { saveUndo(); resetLayers([{ g: newPaint() }]); };
   document.getElementById('undo').onclick = () => {
     if (!undo) return;
-    resetLayers(undo);
+    resetLayers(undo); // snapshot graphics become the live layers, so undo is single-use
     undo = null;
   };
   document.getElementById('save').onclick = () => {
@@ -143,20 +144,27 @@ function copyPaint(src) { const g = newPaint(); g.image(src, 0, 0); return g; }
 
 function inCanvas() { return mouseX >= 0 && mouseX < W && mouseY >= 0 && mouseY < H; }
 
+// p5 only refreshes pmouseX/Y inside its own frame loop, so under noLoop() track the previous point here.
+let last = null;
+
 function mousePressed() {
   if (!inCanvas()) return;
   saveUndo();
+  last = [mouseX, mouseY];
   tools[current.tool].press(mouseX, mouseY);
   redraw();
 }
 
 function mouseDragged() {
+  if (!last) return;
+  const [px, py] = last;
+  last = [mouseX, mouseY];
   if (!inCanvas()) return;
-  tools[current.tool].drag(mouseX, mouseY, pmouseX, pmouseY);
+  tools[current.tool].drag(mouseX, mouseY, px, py);
   redraw();
 }
 
-function mouseReleased() { tools[current.tool].release(); }
+function mouseReleased() { last = null; tools[current.tool].release(); }
 
 function renderCursor() {
   if (current.tool === "pencil") return "drag";
