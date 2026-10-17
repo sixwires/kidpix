@@ -25,7 +25,7 @@ function topPaint() {
 function resetLayers(next) { layers.forEach(l => l.g && l.g.remove()); setLayers(next); redraw(); }
 
 // Animated GIF stamps
-const GIFS = ["korie-cara.gif", "korie-kid.gif", "madi-baby.png"];
+const GIFS = ["korie-cara.gif", "korie-kid.gif", "madi-baby.png", "madi.gif"];
 let stamps = [];
 
 const tools = {
@@ -96,7 +96,38 @@ const tools = {
     },
     release() {},
   },
+
+  // Paint-bucket: flood-fills the on-screen composite (all layers + white) from the click point
+  // and bakes that region into the top paint layer.
+  fill: {
+    press(x, y) {
+      const img = drawingContext.getImageData(0, 0, W, H);
+      const [r, g, b] = color(current.color).levels;
+      const mask = fillMask(new Uint32Array(img.data.buffer), W, H, Math.floor(x), Math.floor(y), (255 << 24) | (b << 16) | (g << 8) | r);
+      const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+      tmp.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(mask.buffer), W, H), 0, 0);
+      topPaint().drawingContext.drawImage(tmp, 0, 0);
+    },
+    drag() {},
+    release() {},
+  },
 };
+
+// 4-connected exact-match flood fill of src (RGBA32 pixels, w*h) from (x,y); returns a buffer with the region set to c.
+// ponytail: exact match leaves anti-aliased fringes unfilled, like classic KidPix; add a tolerance if that bugs people.
+function fillMask(src, w, h, x, y, c) {
+  const dst = new Uint32Array(src.length), seed = src[y * w + x], stack = [y * w + x];
+  while (stack.length) {
+    const i = stack.pop();
+    if (src[i] !== seed || dst[i]) continue;
+    dst[i] = c;
+    if (i % w > 0) stack.push(i - 1);
+    if (i % w < w - 1) stack.push(i + 1);
+    if (i >= w) stack.push(i - w);
+    if (i + w < src.length) stack.push(i + w);
+  }
+  return dst;
+}
 
 function preload() {
   stamps = GIFS.map(p => loadImage(`${ASSETS_PREFIX}${p}`));
@@ -206,6 +237,7 @@ function renderCursor() {
   if (current.tool === "eraser") return "move";
   if (current.tool === "brush") return "crosshair";
   if (current.tool === "gif") return ASSETS_PREFIX + GIFS[current.gif];
+  if (current.tool === "fill") return "cell";
   return "pointer";
 }
 
@@ -222,3 +254,4 @@ for (const [k, b] of Object.entries(BRUSHES)) {
   console.assert((b.anim > 0) !== (b.spacing >= 0), `brush ${k} needs exactly one of anim/spacing`);
   console.assert(b.make('#000', 0, 0, 0).brush instanceof HTMLCanvasElement, `brush ${k} did not render`);
 }
+{ const m = fillMask(Uint32Array.of(0, 1, 0, 1, 1, 1, 0, 1, 0), 3, 3, 0, 0, 9); console.assert(m[0] === 9 && m[1] === 0 && m[8] === 0, 'flood fill leaks'); }
