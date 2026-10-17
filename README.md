@@ -12,6 +12,7 @@ Open `index.html` in a browser.
   Rose, Splatter, Triangles, Raindrops, Rainbow Bar, Rainbow Doughnut, Rainbow Ball,
   Spray, Icy, Dumbbell
 - Animated stamp – one button per GIF in `assets/`
+- Fill – paint bucket, flood-fills the clicked region
 - Eraser
 
 The square row above the canvas picks the size for every pen. Pick a color from
@@ -20,8 +21,7 @@ drawing in this browser (restored on reload). Export downloads a PNG.
 
 ## Adding GIF stamps
 
-Put animated GIFs in `gifs/` and list them in `GIFS` at the top of `sketch.js`.
-Until then the stamp pen uses a generated smiley.
+Put GIFs/PNGs in `assets/` and list them in `GIFS` at the top of `sketch.js`.
 
 ## Files
 
